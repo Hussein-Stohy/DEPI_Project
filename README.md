@@ -2,8 +2,10 @@
 
 An end-to-end data engineering & analytics platform for **Egypt's tech job
 market**: it scrapes job postings from five job boards, cleans and standardizes
-them, and loads them into a PostgreSQL star schema modeled with dbt — ready for
-analytics and a public web app.
+them, and loads them into a PostgreSQL star schema modeled with dbt. The whole
+pipeline is orchestrated with Airflow and served through a FastAPI backend to a
+React + Vite frontend — the project is now **complete end-to-end**, from raw
+scrape to public web app.
 
 ## Architecture
 
@@ -16,6 +18,9 @@ concerns:
 | **Processing** (cleaning) | One source-agnostic cleaner + quality gate | `processing/` → `data/silver/` (Silver) |
 | **Warehouse** (modeling) | PostgreSQL **star schema** loader (SCD2, idempotent) | `warehouse/` → PostgreSQL (Gold) |
 | **dbt** (transformation) | staging → intermediate → marts (+ tests, snapshot) | `dbt/` → schemas `staging`/`intermediate`/`marts` |
+| **Orchestration** | Apache Airflow — 3 DAGs (ingestion, processing & warehouse, dbt) | `airflow/` |
+| **Backend API** | FastAPI serving analytics to the frontend | `api/` |
+| **Frontend** | React + Vite web app | `frontend/` |
 
 ### Producers
 
@@ -41,14 +46,41 @@ python -m producers.runner --list        # list known producers
 JOB_QUERY="data engineer" MAX_JOBS=200 make scrape   # scope the run
 ```
 
+### Orchestration (Airflow)
+
+The pipeline is scheduled and automated with **Apache Airflow**, split into three
+focused DAGs so each stage can be triggered, retried, and monitored independently:
+
+| DAG | Responsibility |
+|-----|-----------------|
+| **Ingestion DAG** | Runs the 5 producers, collecting raw job postings into the Bronze layer |
+| **Processing & Warehouse DAG** | Cleans/standardizes data (Silver) and loads it into the PostgreSQL star schema (Gold) |
+| **dbt DAG** | Runs dbt (staging → intermediate → marts) and executes tests/snapshots |
+
+### Backend & Frontend
+
+- **Backend API** — built with **FastAPI**, exposing the dbt marts (in-demand
+  roles, salary intelligence, skill demand, company insights, geographic
+  distribution, work-mode breakdown, hiring trends) as REST endpoints for the
+  frontend.
+- **Frontend** — built with **React + Vite**, consuming the backend API to
+  present dashboards and search/filter views over Egypt's tech job market.
+
 ## Progress (against the project plan)
+
+**Status: ✅ Project complete — all phases done.**
 
 - ✅ **Phase 1** — Environment setup & project structure
 - ✅ **Phase 2** — Data ingestion — all 5 producers (Wuzzuf, Forasna, Jobzella, Bayt, Indeed)
 - ✅ **Phase 3** — Data cleaning & standardization (unified cleaner, quality gate)
 - ✅ **Phase 4** — Data modeling & PostgreSQL star schema
 - ✅ **Phase 5** — dbt transformation layer (staging → intermediate → marts, 49 tests, snapshot)
-- ⬜ Phases 6–11 — Airflow, analytics API, frontend, deployment
+- ✅ **Phase 6** — Airflow orchestration & automation (3 DAGs: ingestion, processing & warehouse, dbt)
+- ✅ **Phase 7** — Analytics & insights models (dbt marts)
+- ✅ **Phase 8** — Testing, monitoring & documentation
+- ✅ **Phase 9** — Backend API (FastAPI)
+- ✅ **Phase 10** — Frontend web application (React + Vite)
+- ✅ **Phase 11** — Deployment & infrastructure
 
 ## Setup (works on any machine)
 
